@@ -58,8 +58,6 @@ export interface IBasketItem {
 // интерфейс корзины
 export interface IBasket {
   items: IBasketItem[];
-  totalPrice: number;
-  totalItems: number;
 }
 
 // интерфейс заказа в приложении
@@ -68,8 +66,7 @@ export interface IOrder {
   address: string;
   email: string;
   phone: string;
-  items: IBasketItem[];
-  orderTotal: number;
+  items: string[];
 }
 
 export type PaymentMethod = 'online' | 'cash';
