@@ -98,3 +98,4 @@ export interface IEventPayload<T> {
   event: AppEvents;
   data?: T;
 }
+

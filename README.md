@@ -55,7 +55,28 @@ yarn build
 
 ### Базовые классы
 
-#### EventEmitter (src/components/base/events.ts)
+### Класс Api
+
+Класс для работы с API, поддерживает запросы GET и POST (включая PUT и DELETE).
+
+**Свойства:**
+
+- baseUrl: Базовый URL для запросов.
+- options: Опции запроса, включая заголовки.
+
+**Методы:**
+
+- constructor(baseUrl: string, options: RequestInit = {}): Инициализация с базовым URL.
+- handleResponse(response: Response): Обработка ответа от сервера.
+- get(uri: string): Выполнение GET-запроса.
+- post(uri: string, data: object, method: ApiPostMethods = 'POST'): Выполнение POST-запроса.
+
+**Типы:**
+
+- ApiListResponse<Type>: Ответ с количеством элементов и данными.
+- ApiPostMethods: Типы HTTP-методов: 'POST', 'PUT', 'DELETE'.
+
+### EventEmitter (src/components/base/events.ts)
 
 •   **Предназначение:** Обеспечивает работу с событиями.
 •   **Функции:**
@@ -64,7 +85,7 @@ yarn build
     *   off(eventName: EventName, callback: Subscriber): Снимает обработчик с события.
     *   trigger(event: string, context?: Partial<T>): Создает коллбек-триггер, генерирующий событие при вызове.
 
-#### Component (src/components/base/components.ts)
+### Component (src/components/base/components.ts)
 
 •   **Предназначение:** Базовый класс для всех UI-компонентов.
 •   **Функции:**
@@ -74,11 +95,68 @@ yarn build
     *   setImage(element: HTMLImageElement, src: string, alt?: string): Устанавливает изображение и альтернативный текст.
     *   render(data?: Partial<T>): HTMLElement: Отрисовывает компонент.
 
-#### Model (src/components/base/model.ts)
+### Model (src/components/base/model.ts)
 
 •   **Предназначение:** Базовый класс для всех моделей данных.
 •   **Функции:**
     *   emitChanges(event: string, payload?: object): Сообщает всем слушателям об изменении данных в модели.
+
+### Класс AppState
+
+Класс AppState управляет состоянием приложения, связанным с каталогом товаров, корзиной, заказом и обработкой формы. Он расширяет базовый класс Model, предоставляя методы для изменения состояния и оповещения подписчиков об изменениях.
+
+**Свойства:**
+
+- basket: ICard[] — массив товаров в корзине.
+- catalog: ICard[] — массив доступных товаров в каталоге.
+- order: IOrder — объект текущего заказа, содержащий информацию о покупателе и товарах.
+- preview: string | null — ID товара, выбранного для предпросмотра.
+- formErrors: FormErrors — объект, содержащий ошибки валидации формы.
+
+**Методы:**
+
+- getOrder(): IOrder
+  Возвращает объект текущего заказа.
+
+- getIds(): string[]
+  Возвращает массив ID товаров в корзине.
+
+- removeBasket(item: ICard)
+  Удаляет товар из корзины по его id.
+
+- addBasket(item: ICard)
+  Добавляет товар в корзину и оповещает подписчиков об изменении.
+
+- clearAllCardsInBasket()
+  Очищает корзину и отправляет соответствующие события об изменении состояния.
+
+- CardInBasket(item: ICard): boolean
+  Проверяет, находится ли товар в корзине.
+
+- getTotal(): number
+  Возвращает общую сумму товаров в корзине, основываясь на ценах из каталога.
+
+- setCatalog(items: ICard[])
+  Устанавливает список товаров каталога и отправляет событие обновления.
+
+- setPreview(item: ICard)
+  Устанавливает ID товара для предпросмотра и отправляет соответствующее событие.
+
+- clearInputs()
+  Сбрасывает данные заказа и отправляет событие order:changed.
+
+- setPaymentField(field: keyof IPaymentForm, value: string)
+  Изменяет поле, связанное с оплатой, проверяет корректность данных и отправляет событие order:ready.
+
+- setContactsField(field: keyof IContactsForm, value: string)
+  Изменяет поле контактов, проверяет корректность данных и, если данные валидны, отправляет событие contacts:ready.
+
+- validatePayment(): boolean
+  Проверяет корректность заполнения данных об оплате, обновляет объект formErrors и отправляет событие formErrors:change. Возвращает true, если ошибок нет.
+
+- validateContacts(): boolean
+  Проверяет корректность контактных данных, обновляет formErrors и отправляет событие formErrors:change. Возвращает true, если ошибок нет.
+
 
 ### Описание компонентов
 
@@ -100,7 +178,6 @@ yarn build
 •   **Методы:**
 
     *   constructor(data: Partial<IProductDTO>, events: IEvents) - Конструктор класса, принимает данные товара и объект EventEmitter.
-    *   emitChanges(event: string, payload?: object) -  Уведомляет об изменении данных товара.
 
 #### BasketModel
 
@@ -129,12 +206,10 @@ yarn build
     *   address: string - Адрес доставки.
     *   email: string - Email покупателя.
     *   phone: string - Телефон покупателя.
-    *   items: string[] - Массив идентификаторов товаров в заказе.
 
 •   **Методы:**
 
     *   constructor(data: Partial<IOrder>, events: IEvents) - Конструктор класса, принимает данные заказа и объект EventEmitter.
-    *   submitOrder(): void - Отправляет заказ.  Генерирует события ORDER_SUBMITTED, ORDER_SUCCESS или ORDER_FAILED.
 
 #### ProductCardView
 
@@ -185,8 +260,6 @@ yarn build
 •   **Методы:**
 
     *   render(): HTMLElement - Отрисовывает форму оформления заказа.  Добавляет обработчики событий на поля ввода и кнопки.
-    *   validate(): IFormValidation -  Проверяет валидность в веденных данных.
-    *   getData(): IOrder -  Возвращает данные из формы в виде объекта IOrder.
 
 #### SuccessView
 
