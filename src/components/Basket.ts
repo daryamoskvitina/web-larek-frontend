@@ -12,8 +12,7 @@ export class Basket extends Component<IBasketView> {
   protected _list: HTMLElement;
   protected _total: HTMLElement;
   protected _button: HTMLButtonElement;
-
-  // public items: HTMLElement[] = [];
+  
   private _basketItems: HTMLElement[] = [];
 
   constructor(container: HTMLElement, protected events: EventEmitter) {

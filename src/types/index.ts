@@ -1,11 +1,9 @@
-// интерфейс формата ответа API при запросе списка товаров
 export interface IProductListResponse {
   items: IProduct[];
   total: number;
   preview: string | null
 }
 
-// интерфейс самого товара
 export interface IProduct {
   id: string;
   description: string;
@@ -15,7 +13,6 @@ export interface IProduct {
   price: number | null;
 }
 
-// интерфейс заказа в приложении
 export interface IOrder {
   payment: string;
   address: string;
@@ -27,7 +24,6 @@ export interface IOrder {
 
 export type PaymentMethod = 'online' | 'cash';
 
-// интерфейс формата данных при создании заказа (отрпавляется в API)
 export interface IOrderRequest {
   payment: PaymentMethod;
   email: string;
@@ -37,20 +33,17 @@ export interface IOrderRequest {
   items: string[];
 }
 
-// интерфейс формата ответа API после успешного создания заказа
 export interface IOrderResponse {
   id: string;
   total: number;
 }
 
-// интерфейс пользователя (для взаимодейтсвия с API)
 export interface IApiClient {
   baseUrl: string;
   get<T>(uri: string): Promise<T>;
   post<T>(uri: string, data: object, method?: ApiPostMethods): Promise<T>;
 }
 
-// интерфейс одного товара в корзине
 export interface IBasketItem {
   productId: string;
   title: string;
@@ -62,7 +55,6 @@ export interface IBasketItemWithQuantity extends IBasketItem {
   listNumber: number;
 }
 
-// интерфейс корзины
 export interface IBasket {
   items: IBasketItem[];
 }
@@ -74,7 +66,6 @@ export interface IFormState {
   errors: string[];
 }
 
-// допустимые HTTP-методы
 export type ApiPostMethods = 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 export enum AppEvents {
