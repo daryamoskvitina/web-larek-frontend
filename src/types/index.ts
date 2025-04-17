@@ -1,18 +1,31 @@
-// интерфейс структуры отдельного товара (из API)
-export interface IProductDTO {
+// интерфейс формата ответа API при запросе списка товаров
+export interface IProductListResponse {
+  items: IProduct[];
+  total: number;
+  preview: string | null
+}
+
+// интерфейс самого товара
+export interface IProduct {
   id: string;
-  title: string;
-  category: string;
   description: string;
   image: string;
+  title: string;
+  category: string;
   price: number | null;
 }
 
-// интерфейс формата ответа API при запросе списка товаров
-export interface IProductListResponse {
-  items: IProductDTO[];
+// интерфейс заказа в приложении
+export interface IOrder {
+  payment: string;
+  address: string;
+  email: string;
+  phone: string;
+  items: string[];
   total: number;
 }
+
+export type PaymentMethod = 'online' | 'cash';
 
 // интерфейс формата данных при создании заказа (отрпавляется в API)
 export interface IOrderRequest {
@@ -20,7 +33,7 @@ export interface IOrderRequest {
   email: string;
   phone: string;
   address: string;
-  total: number; // общая стоимость
+  total: number;
   items: string[];
 }
 
@@ -32,19 +45,9 @@ export interface IOrderResponse {
 
 // интерфейс пользователя (для взаимодейтсвия с API)
 export interface IApiClient {
-  getProducts(): Promise<IProductListResponse>; // метод получения списка товаров
-  getProduct(id: string): Promise<IProductDTO | undefined>; // метод получения информации о конкретном товаре по его id, возвращает undefined, если товар не найден
-  createOrder(order: IOrderRequest): Promise<IOrderResponse>; // метод для отправки запроса на создание заказа
-}
-
-// интерфейс самого товара (в самом приложении, тк может отличаться от IProductDTO)
-export interface IProduct {
-  id: string;
-  description: string;
-  image: string;
-  title: string;
-  category: string;
-  price: number | null;
+  baseUrl: string;
+  get<T>(uri: string): Promise<T>;
+  post<T>(uri: string, data: object, method?: ApiPostMethods): Promise<T>;
 }
 
 // интерфейс одного товара в корзине
@@ -52,7 +55,11 @@ export interface IBasketItem {
   productId: string;
   title: string;
   price: number | null;
-  quantity: number; // количество товаров этого вида
+  quantity: number;
+}
+
+export interface IBasketItemWithQuantity extends IBasketItem {
+  listNumber: number;
 }
 
 // интерфейс корзины
@@ -60,21 +67,11 @@ export interface IBasket {
   items: IBasketItem[];
 }
 
-// интерфейс заказа в приложении
-export interface IOrder {
-  paymentMethod: PaymentMethod;
-  address: string;
-  email: string;
-  phone: string;
-  items: string[];
-}
+export type FormErrors = Partial<Record<keyof IOrder, string>>;
 
-export type PaymentMethod = 'online' | 'cash';
-
-// валидация
-export interface IFormValidation {
-    isValid: boolean;
-    errors: Record<string, string>;
+export interface IFormState {
+  valid: boolean;
+  errors: string[];
 }
 
 // допустимые HTTP-методы
@@ -99,3 +96,13 @@ export interface IEventPayload<T> {
   data?: T;
 }
 
+export  interface IUser extends IOrder {
+}
+
+export interface IAppState {
+  catalog: IProduct[];
+  basket: IBasketItem[];
+  preview: string | null;
+  order: IUser;
+  loading: boolean;
+}
