@@ -1,109 +1,72 @@
 import { Model } from "./base/model";
-import { IProduct, IUser, IAppState, IOrder, FormErrors } from "../types";
-
-export class ProductItem extends Model<IProduct> {
-  id: string;
-	category: string;
-	title: string;
-	description: string;
-	image: string;
-	price: number;
-}
+import { IProduct, IUser, IAppState, FormErrors } from "../types";
 
 export type CatalogChangeEvent = {
-	catalog: ProductItem[];
+	catalog: IProduct[];
 };
 
 export class AppState extends Model<IAppState> {
-  basket: ProductItem[] = [];
-  basketTotal: number;
-  catalog: ProductItem[];
-  order: IUser = {
+  basket: IProduct[] = [];
+	catalog: IProduct[];
+  order: Omit<IUser, 'total' | 'items'> = {
     payment: '',
 		email: '',
 		phone: '',
 		address: '',
-		total: 0,
-		items: [],
   };
   preview: string;
 	formErrors: FormErrors = {};
 
   setCatalog(items: IProduct[]) {
-		this.catalog = items.map(item => {
-			const productItem = new ProductItem(item, this.events);
-			Object.assign(productItem, item);
-			return productItem;
-		});
+		this.catalog = items;
 		this.emitChanges('items:changed', { catalog: this.catalog });
 	}
 
-  setBasket(item: ProductItem) {
-		if (item) {
-			this.basket.push(item);
-		}
+	setBasket(item: IProduct) {
+		this.basket.push(item);
+		this.emitChanges('basket:changed', { basket: this.basket });
 	}
 
   clearBasket() {
-		this.basket.forEach((el) => {
-			this.emitChanges('basket:delete-card', el);
-		});
+		this.basket = [];
+		this.emitChanges('basket:changed', {basket: this.basket});
 	}
 
   clearOrder() {
-		this.order.payment = '';
-		this.order.email = '';
-		this.order.phone = '';
-		this.order.address = '';
-		this.order.total = 0;
-		this.order.items = [];
-	}
-  
-  setItems(item: IProduct) {
-		if (typeof item.price !== 'number') {
-			return;
-		}
-		this.order.items.push(item.id);
-	}
-
-  getBasket() {
-		return this.basket;
+		this.order = {
+			payment: '',
+			email: '',
+			phone: '',
+			address: '',
+	};
 	}
 
   checkCard(id: string) {
-		if (this.basket.length) {
-			return this.basket.some((el) => el.id === id);
-		}
-		return false;
+		return this.basket.some((el) => el.id === id);
 	}
 
-  setPreview(item: ProductItem) {
+	setPreview(item: IProduct) {
 		this.preview = item.id;
 		this.emitChanges('preview:changed', item);
 	}
 
   removeFromBasket(id: string) {
 		this.basket = this.basket.filter((el) => el.id !== id);
+		this.emitChanges('basket:changed', { basket: this.basket });
 	}
 
   getTotal() {
-		let number = 0;
-		this.basket.forEach((item) => {
-			number += item.price;
-			return number;
-		});
-		return number;
+		return this.basket.reduce((acc, item) => acc + item.price, 0);
 	}
 
   getBasketNumber() {
 		return this.basket.length;
 	}
 
-  setOrderField<K extends keyof IUser>(field: K, value: IUser[K]) {
-    this.order[field] = value;
-    this.order.total = this.getTotal();
-    this.validateOrder();
-  }  
+	setOrderField<K extends keyof Omit<IUser, 'total' | 'items'>>(field: K, value: IUser[K]) {
+		this.order[field] = value;
+		this.validateOrder();
+	}
 
 	validateOrder() {
 		const errors: typeof this.formErrors = {};

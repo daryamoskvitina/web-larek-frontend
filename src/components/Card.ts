@@ -110,6 +110,7 @@ export class Product<T> extends Component<IProductView<T>> {
 	changeButton() {
 		if (this._button) {
 			this._button.textContent = 'Добавлен в корзину';
+			this._button.disabled = true;
 		}
 	}
 }

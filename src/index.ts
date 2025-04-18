@@ -2,14 +2,14 @@ import './scss/styles.scss';
 import { API_URL, CDN_URL } from './utils/constants';
 import { EventEmitter } from './components/base/events';
 import { LarekAPI } from './components/LarekApi';
-import { AppState, CatalogChangeEvent, ProductItem } from './components/LarekData';
+import { AppState } from './components/LarekData';
 import { Page } from './components/Page';
 import { cloneTemplate, createElement, ensureElement } from './utils/utils';
 import { Product, CardProductItem, BasketCard } from './components/Card';
 import { Modal } from './components/Modal';
 import { Basket } from './components/Basket';
 import { Order } from './components/Order';
-import { IOrder } from './types';
+import { IOrder, IProduct } from './types';
 import { Success } from './components/Success';
 
 const api = new LarekAPI (CDN_URL, API_URL);
@@ -53,12 +53,12 @@ const basket = new Basket(cloneTemplate(basketTemplate), events);
 const order = new Order(cloneTemplate(orderTemplate), events);
 const contacts = new Order(cloneTemplate(contactsTemplate), events);
 
-events.on('card:select', (item: ProductItem) => {
+events.on('card:select', (item: IProduct) => {
 	console.log('card:select');
 	appData.setPreview(item);
 });
 
-events.on<CatalogChangeEvent>('items:changed', () => {
+events.on('items:changed', () => {
 	page.catalog = appData.catalog.map((item) => {
 		const card = new Product('card', cloneTemplate(cardCatalogTemplate), {
 			onClick: () => {
@@ -77,15 +77,13 @@ events.on<CatalogChangeEvent>('items:changed', () => {
 });
 
 const updateBasketList = () => {
-	let listNumber = 0;
-	basket.items = appData.getBasket().map((item) => {
-		listNumber = listNumber + 1;
+		basket.items = appData.basket.map((item, index) => {
 		const card = new BasketCard('card', cloneTemplate(cardBasketTemplate), {
-			onClick: () => {
+			onClick: (e) => {
 				events.emit('basket:delete-card', item);
 			},
 		});
-				card.listNumber = listNumber;
+				card.listNumber = index + 1;
 				return card.render({
 					title: item.title,
 					price: item.price,
@@ -93,31 +91,36 @@ const updateBasketList = () => {
 	});
 };
 
-events.on('basket:delete-card', (item: ProductItem) => {
+events.on('basket:delete-card', (item: IProduct) => {
 	appData.removeFromBasket(item.id);
 	basket.total = appData.getTotal();
 	page.counter = appData.getBasketNumber();
 	updateBasketList();
 });
 
-events.on('basket:change', (item: ProductItem) => {
+events.on('basket:changed', () => {
+	updateBasketList();
+	basket.total = appData.getTotal();
+	page.counter = appData.getBasketNumber();
+})
+
+events.on('basket:change', (item: IProduct) => {
 	console.log('basket:change');
 
 	if (!appData.checkCard(item.id)) {
-		appData.setBasket(item);
-		appData.setItems(item);
+			appData.setBasket(item);
 	}
 
 	basket.total = appData.getTotal();
 	page.counter = appData.getBasketNumber();
 
-	console.log("Содержимое корзины:", appData.getBasket())
+	// console.log("Содержимое корзины:", appData.getBasket())
 
 	updateBasketList();
 });
 
-events.on('preview:changed', (item: ProductItem) => {
-	const showItem = (item: ProductItem) => {
+events.on('preview:changed', (item: IProduct) => {
+	const showItem = (item: IProduct) => {
 		const card = new CardProductItem(cloneTemplate(cardPreviewTemplate), {
 			onClick: (e) => {
 				events.emit('basket:change', item);
@@ -189,25 +192,23 @@ events.on('contacts:open', () => {
 });
 
 events.on(
-	/^order\..*:change/,
-	(data: { field: keyof IOrder; value: string }) => {
-		appData.setOrderField(data.field, data.value);
-	}
-);
-events.on(
-	/^contacts\..*:change/,
-	(data: { field: keyof IOrder; value: string }) => {
-		appData.setOrderField(data.field, data.value);
-	}
-);
+  /^order\..*:change/,
+  (data: { field: keyof Omit<IOrder, 'total' | 'items'>; value: string }) => {
+    appData.setOrderField(data.field, data.value);
+  });
 
 events.on(
-	'payment:change',
-	(data: { field: keyof IOrder; value: string }) => {
-		appData.setOrderField(data.field, data.value);
-		console.log('payment:change');
-	}
-);
+  /^contacts\..*:change/,
+  (data: { field: keyof Omit<IOrder, 'total' | 'items'>; value: string }) => {
+    appData.setOrderField(data.field, data.value);
+  });
+
+events.on(
+  'payment:change',
+  (data: { field: keyof Omit<IOrder, 'total' | 'items'>; value: string }) => {
+    appData.setOrderField(data.field, data.value);
+    console.log('payment:change');
+  });
 
 events.on('formErrors:change', (errors: Partial<IOrder>) => {
 	const { address, phone, email, payment } = errors;
@@ -223,8 +224,16 @@ events.on('formErrors:change', (errors: Partial<IOrder>) => {
 
 events.on('contacts:submit', () => {
 	console.log('contacts:submit');
+
+	// Формируем объект заказа непосредственно перед отправкой
+	const orderData: IOrder = {
+		...appData.order,
+		items: appData.basket.map(item => item.id),
+		total: appData.getTotal()
+	};
+	
 	api
-		.orderLots(appData.order)
+		.orderLots(orderData)
 		.then((result) => {
 			appData.clearBasket();
 			appData.clearOrder();
